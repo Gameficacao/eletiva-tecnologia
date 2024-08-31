@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat em Tempo Real</title>
+    <!-- Usar a versão compatível do Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <!-- Adicionar Quill -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+            margin: 0;
+        }
+        #login, #chat {
+            width: 300px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            background-color: #fff;
+        }
+        #messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        #messageEditor {
+            height: 100px;
+            margin-top: 10px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Tela de entrada do usuário -->
+    <div id="login">
+        <h2>Entre com seu nome de usuário</h2>
+        <input type="text" id="username" placeholder="Nome de usuário" style="width: 97%;">
+        <button onclick="enterChat()">Entrar</button>
+    </div>
+
+    <!-- Tela do chat -->
+    <div id="chat" style="display: none;">
+        <h2>Gameficação - Eletiva - Desenrolando a Tecnologia</h2>
+        <div id="messages"></div>
+        <div id="messageEditor"></div>
+        <button onclick="sendMessage()">Enviar</button>
+    </div>
+
+    <script>
+        // Configurações do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCpoGpph582U_ITGCSWMfXUGsFuzcS2DG4",
+            authDomain: "eletiva-tecnologia.firebaseapp.com",
+            projectId: "eletiva-tecnologia",
+            storageBucket: "eletiva-tecnologia.appspot.com",
+            messagingSenderId: "29318145740",
+            appId: "1:29318145740:web:88e2118120107b5e724469"
+        };
+
+        // Inicializar o Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let userId = '';
+        let logoutEnabled = true; // Valor padrão
+
+        // Inicializar o Quill
+        const quill = new Quill('#messageEditor', {
+            theme: 'snow'
+        });
+
+        // Função para enviar mensagem
+        function sendMessage() {
+            const message = quill.root.innerHTML.trim();
+
+            if (message) {
+                db.collection('chat').add({
+                    userId: userId,
+                    message: message,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                });
+                quill.root.innerHTML = ''; // Limpa o editor após enviar
+            }
+        }
+
+        // Função para receber mensagens
+        function receiveMessages() {
+            db.collection('chat')
+                .orderBy('timestamp')
+                .onSnapshot((snapshot) => {
+                    const messagesDiv = document.getElementById('messages');
+                    messagesDiv.innerHTML = '';
+                    snapshot.forEach(doc => {
+                        const messageData = doc.data();
+                        messagesDiv.innerHTML += `<p><strong>${messageData.userId}</strong>: ${messageData.message}</p>`;
+                    });
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll automático para a última mensagem
+                });
+        }
+
+        // Função para entrar no chat
+        function enterChat() {
+            const usernameInput = document.getElementById('username');
+            userId = usernameInput.value.trim();
+
+            if (!userId) {
+                alert('Por favor, insira um nome de usuário.');
+                return;
+            }
+
+            document.getElementById('login').style.display = 'none';
+            document.getElementById('chat').style.display = 'block';
+            receiveMessages();
+        }
+    </script>
+</body>
+</html>
